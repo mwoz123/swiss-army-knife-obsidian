@@ -1,4 +1,4 @@
-# Swiss army knife for Obsidian
+# Swiss army knife for [Obsidian](https://obsidian.md)
 
 Collection of various, small command pallete utilities.
 

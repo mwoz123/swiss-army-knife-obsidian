@@ -20,8 +20,8 @@ export default class SwissArmyKnifePlugin extends Plugin {
 	}
 
 	removeEmptyLines(editor: Editor) {
-		const doubledEmptyLinesWithOptionalWhiteSpacesRegex = /\s*?\n\s*?\n$/gm;
-		return replaceRegexInFile(editor, doubledEmptyLinesWithOptionalWhiteSpacesRegex, '\n');
+		const emptyLinesWithOptionalWhitespacesRegex = /\s*?\n\s*?\n/gm;
+		return replaceRegexInFile(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
 	}
 
 }

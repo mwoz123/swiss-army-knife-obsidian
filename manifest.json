@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
+	"id": "swiss-army-knife",
+	"name": "Swiss Army knife",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "This is a sample plugin for Obsidian. This plugin demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Collection of various utilities (e.g. duplicate empty line remover)",
+	"author": "mwoz123",
+	"authorUrl": "https://github.com/mwoz123/swiss-army-knife-obsidian",
 	"isDesktopOnly": false
 }

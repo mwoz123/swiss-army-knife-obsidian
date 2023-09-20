@@ -14,7 +14,7 @@ on:
 
 env:
   # IMPORTANT: Update this with the name of your plugin
-  PLUGIN_NAME: my-plugin
+  PLUGIN_NAME: swiss-army-knife
 
 jobs:
   release:

@@ -58,7 +58,7 @@ async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'lat
 
 	const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
 	const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
-	const existingElements = fetchedElements.filter(([file, content]) => content.includes("Not Found"))
+	const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
 
 	const urlParts = ghRepoUrl.split("/")
 	const pluginName = urlParts[urlParts.length];

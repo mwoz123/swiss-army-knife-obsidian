@@ -39,30 +39,35 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 
 
 async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
-	const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
-	const { ok, url } = await fetch(urlForGivenVersion);
-	if (!ok) 
-		throw new Error("Invalid url: "+ urlForGivenVersion) ;
+	try {
+		const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
+		const { ok, url } = await fetch(urlForGivenVersion);
+		if (!ok) 
+			throw new Error("Invalid url: "+ urlForGivenVersion) ;
 
-	const isValidRedirectUrl = url.includes('/releases/tag')
-	if(!isValidRedirectUrl) 
-		throw new Error("Redirect url is not valid " + url);
+		const isValidRedirectUrl = url.includes('/releases/tag')
+		if(!isValidRedirectUrl) 
+			throw new Error("Redirect url is not valid " + url);
 
-	const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
+		const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
 
-	const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
-	const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
-	const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
+		const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
+		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
+		const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
 
-	const urlParts = url.split("/")
-	const pluginName = urlParts[4];
-	const pluginsPath = '.obsidian/plugins/'
-	const fullPluginPath = pluginsPath + pluginName
-	app.vault.createFolder(fullPluginPath);
+		const urlParts = url.split("/")
+		const pluginName = urlParts[4];
+		const pluginsPath = '.obsidian/plugins/'
+		const fullPluginPath = pluginsPath + pluginName
+		app.vault.createFolder(fullPluginPath);
 
-	existingElements.map(([filename, content ])=> {
-		app.vault.create(fullPluginPath + "/"+ filename, content)
-	})
+		existingElements.map(([filename, content ])=> {
+			app.vault.create(fullPluginPath + "/"+ filename, content)
+		})
+		new InfoModal(this.app, "Successfully finished. Please restart Obsidian.").open()	
+	}catch (err) {
+		new InfoModal(this.app, err.message).open();
+	}
 }
 
 
@@ -104,6 +109,24 @@ export class PluginModal extends Modal {
 
 	onClose() {
 		const { contentEl } = this;
+		contentEl.empty();
+	}
+}
+
+class InfoModal extends Modal {
+	message: string;
+	constructor(app: App , msg: string) {
+		super(app);
+		this.message = msg;
+	}
+
+	onOpen() {
+		const {contentEl} = this;
+		contentEl.setText(this.message);
+	}
+
+	onClose() {
+		const {contentEl} = this;
 		contentEl.empty();
 	}
 }

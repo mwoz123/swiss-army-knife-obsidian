@@ -64,7 +64,7 @@ async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest'
 		existingElements.map(([filename, content ])=> {
 			app.vault.create(fullPluginPath + "/"+ filename, content)
 		})
-		new InfoModal(this.app, "Successfully finished. Please restart Obsidian.").open()	
+		new InfoModal(this.app, "Successfully installed " + pluginName + " version: " + version +". Please restart Obsidian to make changes visible.").open()	
 	}catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}

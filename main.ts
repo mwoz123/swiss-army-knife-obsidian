@@ -14,8 +14,8 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "fetch-plugin-version",
-			name: "Fetch different plugin version",
-			editorCallback: () => this.fetchPluginPreviousRelease(this.app),
+			name: "Fetch plugin version",
+			callback: () => new PluginModal(this.app,(url, version) => fetchPluginVersion(url, this.app, version)).open()
 		});
 	}
 
@@ -28,10 +28,6 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		const emptyLinesWithOptionalWhitespacesRegex = /\s*?\n\s*?\n/gm;
 		return replaceRegexInFile(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
 	}
-
-	async fetchPluginPreviousRelease(app: App) {
-		new SwissModal(app,(url, version) => fetchPluginPrevRelease(url, app, version)).open();
-	}
 }
 
 
@@ -42,8 +38,7 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 }
 
 
-async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'latest', ){
-	
+async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
 	const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
 	const { ok, url } = await fetch(urlForGivenVersion);
 	if (!ok) 
@@ -71,7 +66,7 @@ async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'lat
 }
 
 
-export class SwissModal extends Modal {
+export class PluginModal extends Modal {
 	result: string;
 	version: string;
 	onSubmit: (result: string, version: string) => void;

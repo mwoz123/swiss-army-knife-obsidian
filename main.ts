@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, Editor, App } from "obsidian";
+import { Plugin, MarkdownView, Editor, App, Modal, Setting } from "obsidian";
 
 export default class SwissArmyKnifePlugin extends Plugin {
 	async onload() {
@@ -30,12 +30,10 @@ export default class SwissArmyKnifePlugin extends Plugin {
 	}
 
 	async fetchPluginPreviousRelease(app: App) {
-		const ghUrl = 'https://github.com/mwoz123/archive-to-single-note';
-		return fetchPluginPrevRelease(ghUrl, app );
+		new SwissModal(app,(url, version) => fetchPluginPrevRelease(url, app, version)).open();
 	}
-
-
 }
+
 
 function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacement: string) {
 	const currentText = editor.getValue();
@@ -48,13 +46,14 @@ async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'lat
 	
 	const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
 	const { ok, url } = await fetch(urlForGivenVersion);
-	if (!ok) return ;
+	if (!ok) 
+		throw new Error("Invalid url: "+ urlForGivenVersion) ;
 
 	const isValidRedirectUrl = url.includes('/releases/tag')
-	if(!isValidRedirectUrl) return ;
+	if(!isValidRedirectUrl) 
+		throw new Error("Redirect url is not valid " + url);
 
 	const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
-
 
 	const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
 	const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
@@ -69,5 +68,47 @@ async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'lat
 	existingElements.map(([filename, content ])=> {
 		app.vault.create(fullPluginPath + "/"+ filename, content)
 	})
-	console.log("done");
+}
+
+
+export class SwissModal extends Modal {
+	result: string;
+	version: string;
+	onSubmit: (result: string, version: string) => void;
+
+	constructor(app: App, onSubmit: (result: string, version: string) => void) {
+		super(app);
+		this.onSubmit = onSubmit;
+	}
+
+	onOpen() {
+		const { contentEl } = this;
+		contentEl.createEl("h1", { text: "GH repo url" });
+		new Setting(contentEl)
+			.setName("url")
+			.addText((text) =>
+				text.onChange((value) => {
+					this.result = value
+				}));
+		new Setting(contentEl)
+			.setName("version")
+			.addText((text) => {
+				text.setValue('latest')
+				text.onChange((ver) => {
+					this.version = ver
+				})});
+		new Setting(contentEl)
+			.addButton((btn) =>
+				btn.setButtonText("Process")
+					.setCta()
+					.onClick(() => {
+						this.close();
+						this.onSubmit(this.result, this.version);
+					}));
+	}
+
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
 }

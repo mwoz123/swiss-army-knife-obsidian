@@ -53,15 +53,15 @@ async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'lat
 	const isValidRedirectUrl = url.includes('/releases/tag')
 	if(!isValidRedirectUrl) return ;
 
-	const fetchUrl = url.replace('/releases/tag/', 'releases/download/');
+	const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
 
 
 	const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
 	const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
 	const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
 
-	const urlParts = ghRepoUrl.split("/")
-	const pluginName = urlParts[urlParts.length];
+	const urlParts = url.split("/")
+	const pluginName = urlParts[4];
 	const pluginsPath = '.obsidian/plugins/'
 	const fullPluginPath = pluginsPath + pluginName
 	app.vault.createFolder(fullPluginPath);

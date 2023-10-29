@@ -1,7 +1,7 @@
 {
 	"name": "swiss-army-knife",
-	"version": "0.1.0",
-	"description": "Collection of various Obsidian utils",
+	"version": "0.5.1",
+	"description": "Collection of various utilities (e.g. duplicate empty line remover, Obsidian plugin version downloader)",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",

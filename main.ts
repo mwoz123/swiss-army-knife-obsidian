@@ -40,7 +40,8 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 
 async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
 	try {
-		const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
+		const ver = version === 'latest' ? version : 'tag/' + version;
+		const urlForGivenVersion = ghRepoUrl + "/releases/" +  ver ;
 		const { ok, url } = await fetch(urlForGivenVersion);
 		if (!ok) 
 			throw new Error("Invalid url: "+ urlForGivenVersion) ;

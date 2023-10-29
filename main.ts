@@ -46,8 +46,8 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 
 async function fetchPluginPrevRelease(ghRepoUrl:string, app: App, version = 'latest', ){
 	
-	const latestRelease = ghRepoUrl + "/releases/" + version;
-	const { ok, url } = await fetch(latestRelease);
+	const urlForGivenVersion = ghRepoUrl + "/releases/" + version;
+	const { ok, url } = await fetch(urlForGivenVersion);
 	if (!ok) return ;
 
 	const isValidRedirectUrl = url.includes('/releases/tag')

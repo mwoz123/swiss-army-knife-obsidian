@@ -15,7 +15,7 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		this.addCommand({
 			id: "fetch-plugin-version",
 			name: "Fetch plugin version",
-			callback: () => new PluginModal(this.app,(url, version) => fetchPluginVersion(url, this.app, version)).open()
+			callback: () => new PluginModal(this.app,(url, tag) => fetchPluginVersion(url, this.app, tag)).open()
 		});
 	}
 
@@ -38,26 +38,27 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 }
 
 
-async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
+async function fetchPluginVersion(ghRepoUrl:string, app: App, tag = '1.0.0', ){
 	try {
-		const ver = version === 'latest' ? version : 'tag/' + version;
-		const urlForGivenVersion = ghRepoUrl + "/releases/" +  ver ;
-		const { ok, url } = await fetch(urlForGivenVersion);
-		if (!ok) 
-			throw new Error("Invalid url: "+ urlForGivenVersion) ;
+		const { pathname }  = new URL(ghRepoUrl);
+		const [ , username, pluginName, , , tagUrl] = pathname.split('/')
+		const rawGHurl = `https://raw.githubusercontent.com/${username}/${pluginName}/${tagUrl || tag}/`
+		// const ver = version === 'latest' ? version : 'tag/' + version;
+		// const urlForGivenVersion = ghRepoUrl + "/releases/" +  ver ;
+		// const { ok, url } = await fetch(urlForGivenVersion);
+		// if (!ok) 
+			// throw new Error("Invalid url: "+ urlForGivenVersion) ;
 
-		const isValidRedirectUrl = url.includes('/releases/tag')
-		if(!isValidRedirectUrl) 
-			throw new Error("Redirect url is not valid " + url);
+		// const isValidRedirectUrl = url.includes('/releases/tag')
+		// if(!isValidRedirectUrl) 
+		// 	throw new Error("Redirect url is not valid " + url);
 
-		const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
+		// const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
 
 		const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
-		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
-		const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
+		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(rawGHurl + e)).text()])));
+		const existingElements = fetchedElements.filter(([ , content]) => !content.includes("Not Found"))
 
-		const urlParts = url.split("/")
-		const pluginName = urlParts[4];
 		const pluginsPath = '.obsidian/plugins/'
 		const fullPluginPath = pluginsPath + pluginName
 		app.vault.createFolder(fullPluginPath);
@@ -65,7 +66,7 @@ async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest'
 		existingElements.map(([filename, content ])=> {
 			app.vault.create(fullPluginPath + "/"+ filename, content)
 		})
-		new InfoModal(this.app, "Successfully installed " + pluginName + " version: " + version +". Please restart Obsidian to make changes visible.").open()	
+		new InfoModal(this.app, "Successfully installed " + pluginName + " version: " + tag +". Please restart Obsidian to make changes visible.").open()	
 	}catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}
@@ -92,9 +93,9 @@ export class PluginModal extends Modal {
 					this.result = value
 				}));
 		new Setting(contentEl)
-			.setName("version")
+			.setName("tag")
 			.addText((text) => {
-				text.setValue('latest')
+				text.setValue('1.0.0')
 				text.onChange((ver) => {
 					this.version = ver
 				})});

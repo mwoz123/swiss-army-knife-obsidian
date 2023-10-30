@@ -1,4 +1,4 @@
-import { Plugin, MarkdownView, Editor, App, Modal, Setting } from "obsidian";
+import { Plugin, MarkdownView, Platform, Editor, App, Modal, Setting } from "obsidian";
 
 export default class SwissArmyKnifePlugin extends Plugin {
 	async onload() {
@@ -39,6 +39,7 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 
 
 async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
+
 	try {
 		const ver = version === 'latest' ? version : 'tag/' + version;
 		const urlForGivenVersion = ghRepoUrl + "/releases/" +  ver ;
@@ -53,7 +54,7 @@ async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest'
 		const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
 
 		const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
-		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetch(fetchUrl + '/' + e)).text()])));
+		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetchDataWithoutCorsIfNeeded(fetchUrl + '/' + e)).text()])));
 		const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
 
 		const urlParts = url.split("/")
@@ -69,6 +70,12 @@ async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest'
 	}catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}
+}
+
+async function fetchDataWithoutCorsIfNeeded(url: string) {
+	const noCorsProxy = 'https://cors-anywhere.herokuapp.com/'
+	const {isMobile} = Platform;
+	return await fetch( isMobile ? noCorsProxy + url : url);
 }
 
 

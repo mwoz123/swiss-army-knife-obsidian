@@ -1,5 +1,6 @@
 import { Plugin, MarkdownView, Platform, Editor, App, Modal, Setting } from "obsidian";
 
+const mobileOnlyCorsProxy = 'https://api.codetabs.com/v1/proxy?quest='
 export default class SwissArmyKnifePlugin extends Plugin {
 	async onload() {
 		this.addCommand({
@@ -15,7 +16,7 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		this.addCommand({
 			id: "fetch-plugin-version",
 			name: "Fetch plugin version",
-			callback: () => new PluginModal(this.app,(url, version) => fetchPluginVersion(url, this.app, version)).open()
+			callback: () => new FetchPluginModal(this.app,(url) => fetchPluginRelease(url, this.app)).open()
 		});
 	}
 
@@ -38,27 +39,21 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 }
 
 
-async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest', ){
-
+async function fetchPluginRelease(ghRepoUrl:string, app: App ){
 	try {
-		const ver = version === 'latest' ? version : 'tag/' + version;
-		const urlForGivenVersion = ghRepoUrl + "/releases/" +  ver ;
-		const { ok, url } = await fetch(urlForGivenVersion);
-		if (!ok) 
-			throw new Error("Invalid url: "+ urlForGivenVersion) ;
-
-		const isValidRedirectUrl = url.includes('/releases/tag')
-		if(!isValidRedirectUrl) 
-			throw new Error("Redirect url is not valid " + url);
-
-		const fetchUrl = url.replace('/releases/tag/', '/releases/download/');
+		const { origin, pathname }  = new URL(ghRepoUrl);
+		const [ , username, pluginName, , , release] = pathname.split('/')
+		const fetchAddr = [origin, username, pluginName, 'releases', 'download', release].join("/")
 
 		const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
-		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetchDataWithoutCorsIfNeeded(fetchUrl + '/' + e)).text()])));
-		const existingElements = fetchedElements.filter(([file, content]) => !content.includes("Not Found"))
+		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetchDataIgnoreCorsIfNeeded(fetchAddr + '/' + e)).text()])));
+		const existingElements = fetchedElements.filter(([, content]) => !content.includes("Not Found"))
 
-		const urlParts = url.split("/")
-		const pluginName = urlParts[4];
+		const containsRequiredData = existingElements.length >=2;
+		if (!containsRequiredData) {
+			throw new Error("Error fetching main.js and/or manifest.json")
+		}
+
 		const pluginsPath = '.obsidian/plugins/'
 		const fullPluginPath = pluginsPath + pluginName
 		app.vault.createFolder(fullPluginPath);
@@ -66,52 +61,44 @@ async function fetchPluginVersion(ghRepoUrl:string, app: App, version = 'latest'
 		existingElements.map(([filename, content ])=> {
 			app.vault.create(fullPluginPath + "/"+ filename, content)
 		})
-		new InfoModal(this.app, "Successfully installed " + pluginName + " version: " + version +". Please restart Obsidian to make changes visible.").open()	
+		new InfoModal(this.app, "Successfully installed " + pluginName + " release: " + release +". Please restart Obsidian to make changes visible.").open()	
 	}catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}
 }
 
-async function fetchDataWithoutCorsIfNeeded(url: string) {
-	const noCorsProxy = 'https://cors-anywhere.herokuapp.com/'
+async function fetchDataIgnoreCorsIfNeeded(url: string) {
 	const {isMobile} = Platform;
-	return await fetch( isMobile ? noCorsProxy + url : url);
+	return await fetch( isMobile ? mobileOnlyCorsProxy + url : url);
 }
 
 
-export class PluginModal extends Modal {
+export class FetchPluginModal extends Modal {
 	result: string;
-	version: string;
-	onSubmit: (result: string, version: string) => void;
+	onSubmit: (result: string) => void;
 
-	constructor(app: App, onSubmit: (result: string, version: string) => void) {
+	constructor(app: App, onSubmit: (result: string) => void) {
 		super(app);
 		this.onSubmit = onSubmit;
 	}
 
 	onOpen() {
 		const { contentEl } = this;
-		contentEl.createEl("h1", { text: "GH repo url" });
+		contentEl.createEl("h1", { text: "Fetch plugin release" });
 		new Setting(contentEl)
-			.setName("url")
+			.setName("GH Release url")
 			.addText((text) =>
 				text.onChange((value) => {
 					this.result = value
 				}));
-		new Setting(contentEl)
-			.setName("version")
-			.addText((text) => {
-				text.setValue('latest')
-				text.onChange((ver) => {
-					this.version = ver
-				})});
+
 		new Setting(contentEl)
 			.addButton((btn) =>
 				btn.setButtonText("Process")
 					.setCta()
 					.onClick(() => {
 						this.close();
-						this.onSubmit(this.result, this.version);
+						this.onSubmit(this.result);
 					}));
 	}
 

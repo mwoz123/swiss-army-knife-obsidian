@@ -22,20 +22,26 @@ export default class SwissArmyKnifePlugin extends Plugin {
 
 	replaceDoubledEmptyLinesWithSingle(editor: Editor) {
 		const doubledEmptyLinesWithOptionalWhiteSpacesRegex = /^\s*?\n\s*?\n/gm;
-		return replaceRegexInFile(editor, doubledEmptyLinesWithOptionalWhiteSpacesRegex, '\n');
+		return replaceRegex(editor, doubledEmptyLinesWithOptionalWhiteSpacesRegex, '\n');
 	}
 
 	removeEmptyLines(editor: Editor) {
 		const emptyLinesWithOptionalWhitespacesRegex = /\s*?\n\s*?\n/gm;
-		return replaceRegexInFile(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
+		return replaceRegex(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
 	}
 }
 
 
-function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacement: string) {
-	const currentText = editor.getValue();
-	const updatedText = currentText.replace(pattern, replacement)
-	editor.setValue(updatedText);
+function replaceRegex(editor: Editor, pattern: RegExp | string, replacement: string) {
+	const selectedText = editor.getSelection();
+	if (selectedText) {
+		const updatedText = selectedText.replace(pattern, replacement)
+		editor.replaceSelection(updatedText)
+	} else {
+		const currentText =  editor.getValue();
+		const updatedText = currentText.replace(pattern, replacement)
+		editor.setValue(updatedText);
+	}
 }
 
 

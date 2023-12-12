@@ -4,8 +4,8 @@ const mobileOnlyCorsProxy = 'https://api.codetabs.com/v1/proxy?quest='
 export default class SwissArmyKnifePlugin extends Plugin {
 	async onload() {
 		this.addCommand({
-			id: "replace-doubled-empty-lines-with-single",
-			name: "Replace doubled empty lines with single",
+			id: "replace-multi-empty-lines-with-single",
+			name: "Replace multi empty lines with single",
 			editorCallback: (editor: Editor, view: MarkdownView) => this.replaceDoubledEmptyLinesWithSingle(editor),
 		});
 		this.addCommand({
@@ -21,12 +21,12 @@ export default class SwissArmyKnifePlugin extends Plugin {
 	}
 
 	replaceDoubledEmptyLinesWithSingle(editor: Editor) {
-		const doubledEmptyLinesWithOptionalWhiteSpacesRegex = /^\s*?\n\s*?\n/gm;
+		const doubledEmptyLinesWithOptionalWhiteSpacesRegex = /^(\s*?\n){2,}/gm;
 		return replaceRegexInFile(editor, doubledEmptyLinesWithOptionalWhiteSpacesRegex, '\n');
 	}
 
 	removeEmptyLines(editor: Editor) {
-		const emptyLinesWithOptionalWhitespacesRegex = /\s*?\n\s*?\n/gm;
+		const emptyLinesWithOptionalWhitespacesRegex = /(\s*?\n){2,}/gm;
 		return replaceRegexInFile(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
 	}
 }
@@ -34,8 +34,14 @@ export default class SwissArmyKnifePlugin extends Plugin {
 
 function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacement: string) {
 	const currentText = editor.getValue();
-	const updatedText = currentText.replace(pattern, replacement)
-	editor.setValue(updatedText);
+	const selectedText = editor.getSelection();
+	if (selectedText) {
+		const updatedText = selectedText.replace(pattern, replacement)
+		editor.replaceSelection(updatedText, selectedText);
+	} else {
+		const updatedText = currentText.replace(pattern, replacement)
+		editor.setValue(updatedText);
+	}
 }
 
 
@@ -61,8 +67,8 @@ async function fetchPluginRelease(ghRepoUrl:string, app: App ){
 		existingElements.map(([filename, content ])=> {
 			app.vault.create(fullPluginPath + "/"+ filename, content)
 		})
-		new InfoModal(this.app, "Successfully installed " + pluginName + " release: " + release +". Please restart Obsidian to make changes visible.").open()	
-	}catch (err) {
+		new InfoModal(this.app, "Successfully installed " + pluginName + " release: " + release +". Please restart Obsidian to make changes visible.").open()
+	} catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}
 }

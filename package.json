@@ -1,6 +1,6 @@
 {
 	"name": "swiss-army-knife",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"description": "Collection of various utilities e.g. duplicate empty line remover, Obsidian plugin release/tag version downloader (eg. for mobile tests)",
 	"main": "main.js",
 	"scripts": {

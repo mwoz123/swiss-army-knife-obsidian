@@ -14,6 +14,11 @@ export default class SwissArmyKnifePlugin extends Plugin {
 			editorCallback: (editor: Editor, view: MarkdownView) => this.removeEmptyLines(editor),
 		});
 		this.addCommand({
+			id: "create-expandable-section",
+			name: "Create expandable/collapsable section",
+			editorCallback: (editor: Editor, view: MarkdownView) => createExpandableSection(editor),
+		});
+		this.addCommand({
 			id: "fetch-plugin-version",
 			name: "Fetch plugin version",
 			callback: () => new FetchPluginModal(this.app,(url) => fetchPluginRelease(url, this.app)).open()
@@ -33,13 +38,39 @@ export default class SwissArmyKnifePlugin extends Plugin {
 
 
 function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacement: string) {
-	const currentText = editor.getValue();
+	const currentText:string = editor.getValue();
 	const selectedText = editor.getSelection();
 	if (selectedText) {
 		const updatedText = selectedText.replace(pattern, replacement)
 		editor.replaceSelection(updatedText, selectedText);
 	} else {
 		const updatedText = currentText.replace(pattern, replacement)
+		editor.setValue(updatedText);
+	}
+}
+
+function createExpandableSection(editor: Editor) {
+	const currentText:string = editor.getValue();
+	const selectedText:string = editor.getSelection();
+	if (selectedText) {
+		const firstSentenceIdentificator = /[\.!?]/;
+		const endOfFirstSentenceIfExist = selectedText.search(firstSentenceIdentificator);
+		const firstSentenceIndex = endOfFirstSentenceIfExist === -1 ? selectedText.length: endOfFirstSentenceIfExist;
+
+		const summary = selectedText.slice(0, firstSentenceIndex);
+		const description = selectedText.slice(firstSentenceIndex, selectedText.length);
+		const updatedText = `
+<details>
+	<summary>${summary}</summary>
+	${description}
+</details>`
+		editor.replaceSelection(updatedText, selectedText);
+	} else {
+		const updatedText = currentText + `
+<details>
+	<summary></summary>
+
+</details>`
 		editor.setValue(updatedText);
 	}
 }

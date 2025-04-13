@@ -53,7 +53,7 @@ function createExpandableSection(editor: Editor) {
 	const currentText:string = editor.getValue();
 	const selectedText:string = editor.getSelection();
 	if (selectedText) {
-		const firstSentenceIdentificator = /[\.!?]/;
+		const firstSentenceIdentificator = /[\.!?]|$/;
 		const endOfFirstSentenceIfExist = selectedText.search(firstSentenceIdentificator);
 		const firstSentenceIndex = endOfFirstSentenceIfExist === -1 ? selectedText.length: endOfFirstSentenceIfExist +1;
 

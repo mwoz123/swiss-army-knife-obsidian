@@ -60,16 +60,18 @@ function createExpandableSection(editor: Editor) {
 		const summary = selectedText.slice(0, firstSentenceIndex);
 		const description = selectedText.slice(firstSentenceIndex, selectedText.length);
 		const updatedText = `
-<details>
-	<summary>${summary}</summary>
+<details><summary>
+	${summary}
+ </summary>
 	${description}
 </details>`
 		editor.replaceSelection(updatedText, selectedText);
 	} else {
 		const updatedText = currentText + `
-<details>
-	<summary></summary>
-
+<details><summary>
+	
+ </summary>
+	
 </details>`
 		editor.setValue(updatedText);
 	}

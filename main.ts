@@ -1,5 +1,6 @@
 import { Plugin, MarkdownView, Platform, Editor, App, Modal, Setting } from "obsidian";
 
+
 const mobileOnlyCorsProxy = 'https://api.codetabs.com/v1/proxy?quest='
 export default class SwissArmyKnifePlugin extends Plugin {
 	async onload() {
@@ -21,24 +22,71 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		this.addCommand({
 			id: "fetch-plugin-version",
 			name: "Fetch plugin version",
-			callback: () => new FetchPluginModal(this.app,(url) => fetchPluginRelease(url, this.app)).open()
+			callback: () => new FetchPluginModal(this.app, (url) => fetchPluginRelease(url, this.app)).open()
 		});
+
+
+		this.addCommand({
+			id: 'page-down-with-cursor',
+			name: 'Page Down',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				this.moveCursorByPage(editor, view, 'down');
+			}
+		});
+
+		this.addCommand({
+			id: 'page-up-with-cursor',
+			name: 'Page Up',
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				this.moveCursorByPage(editor, view, 'up');
+			}
+		});
+
 	}
 
-	replaceDoubledEmptyLinesWithSingle(editor: Editor) {
+	private replaceDoubledEmptyLinesWithSingle(editor: Editor) {
 		const doubledEmptyLinesWithOptionalWhiteSpacesRegex = /^(\s*?\n){2,}/gm;
 		return replaceRegexInFile(editor, doubledEmptyLinesWithOptionalWhiteSpacesRegex, '\n');
 	}
 
-	removeEmptyLines(editor: Editor) {
+	private removeEmptyLines(editor: Editor) {
 		const emptyLinesWithOptionalWhitespacesRegex = /(\s*?\n){2,}/gm;
 		return replaceRegexInFile(editor, emptyLinesWithOptionalWhitespacesRegex, '\n');
 	}
+
+
+	private moveCursorByPage(editor: Editor, view: MarkdownView, direction: 'up' | 'down') {
+		const LINE_HEIGHT = 28;
+
+		const viewHeight = view.contentEl.clientHeight;
+
+		const linesToJump = Math.floor(viewHeight / LINE_HEIGHT) - 2;
+
+		const currentCursor = editor.getCursor();
+
+		let targetLine = direction === 'down'
+			? currentCursor.line + linesToJump -1
+			: currentCursor.line - linesToJump +1;
+
+		const maxLine = editor.lineCount() - 1;
+		if (targetLine < 0) {
+			targetLine = 0;
+		} else if (targetLine > maxLine) {
+			targetLine = maxLine;
+		}
+
+		const newPos = { line: targetLine, ch: currentCursor.ch };
+
+		editor.setCursor(newPos);
+
+		editor.scrollIntoView({ from: newPos, to: newPos });
+	}
+
 }
 
 
 function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacement: string) {
-	const currentText:string = editor.getValue();
+	const currentText: string = editor.getValue();
 	const selectedText = editor.getSelection();
 	if (selectedText) {
 		const updatedText = selectedText.replace(pattern, replacement)
@@ -50,12 +98,12 @@ function replaceRegexInFile(editor: Editor, pattern: RegExp | string, replacemen
 }
 
 function createExpandableSection(editor: Editor) {
-	const currentText:string = editor.getValue();
-	const selectedText:string = editor.getSelection();
+	const currentText: string = editor.getValue();
+	const selectedText: string = editor.getSelection();
 	if (selectedText) {
 		const firstSentenceIdentificator = /[\.!?]|$/;
 		const endOfFirstSentenceIfExist = selectedText.search(firstSentenceIdentificator);
-		const firstSentenceIndex = endOfFirstSentenceIfExist === -1 ? selectedText.length: endOfFirstSentenceIfExist +1;
+		const firstSentenceIndex = endOfFirstSentenceIfExist === -1 ? selectedText.length : endOfFirstSentenceIfExist + 1;
 
 		const summary = selectedText.slice(0, firstSentenceIndex);
 		const description = selectedText.slice(firstSentenceIndex, selectedText.length);
@@ -78,17 +126,17 @@ function createExpandableSection(editor: Editor) {
 }
 
 
-async function fetchPluginRelease(ghRepoUrl:string, app: App ){
+async function fetchPluginRelease(ghRepoUrl: string, app: App) {
 	try {
-		const { origin, pathname }  = new URL(ghRepoUrl);
-		const [ , username, pluginName, , , release] = pathname.split('/')
+		const { origin, pathname } = new URL(ghRepoUrl);
+		const [, username, pluginName, , , release] = pathname.split('/')
 		const fetchAddr = [origin, username, pluginName, 'releases', 'download', release].join("/")
 
 		const toBeFetched = ['main.js', 'manifest.json', 'styles.css']
-		const fetchedElements = await Promise.all(toBeFetched.map(async e=> ([e, await (await fetchDataIgnoreCorsIfNeeded(fetchAddr + '/' + e)).text()])));
+		const fetchedElements = await Promise.all(toBeFetched.map(async e => ([e, await (await fetchDataIgnoreCorsIfNeeded(fetchAddr + '/' + e)).text()])));
 		const existingElements = fetchedElements.filter(([, content]) => !content.includes("Not Found"))
 
-		const containsRequiredData = existingElements.length >=2;
+		const containsRequiredData = existingElements.length >= 2;
 		if (!containsRequiredData) {
 			throw new Error("Error fetching main.js and/or manifest.json")
 		}
@@ -97,18 +145,18 @@ async function fetchPluginRelease(ghRepoUrl:string, app: App ){
 		const fullPluginPath = pluginsPath + pluginName
 		app.vault.createFolder(fullPluginPath);
 
-		existingElements.map(([filename, content ])=> {
-			app.vault.create(fullPluginPath + "/"+ filename, content)
+		existingElements.map(([filename, content]) => {
+			app.vault.create(fullPluginPath + "/" + filename, content)
 		})
-		new InfoModal(this.app, "Successfully installed " + pluginName + " release: " + release +". Please restart Obsidian to make changes visible.").open()
+		new InfoModal(this.app, "Successfully installed " + pluginName + " release: " + release + ". Please restart Obsidian to make changes visible.").open()
 	} catch (err) {
 		new InfoModal(this.app, err.message).open();
 	}
 }
 
 async function fetchDataIgnoreCorsIfNeeded(url: string) {
-	const {isMobile} = Platform;
-	return await fetch( isMobile ? mobileOnlyCorsProxy + url : url);
+	const { isMobile } = Platform;
+	return await fetch(isMobile ? mobileOnlyCorsProxy + url : url);
 }
 
 
@@ -149,18 +197,18 @@ export class FetchPluginModal extends Modal {
 
 class InfoModal extends Modal {
 	message: string;
-	constructor(app: App , msg: string) {
+	constructor(app: App, msg: string) {
 		super(app);
 		this.message = msg;
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.setText(this.message);
 	}
 
 	onClose() {
-		const {contentEl} = this;
+		const { contentEl } = this;
 		contentEl.empty();
 	}
 }

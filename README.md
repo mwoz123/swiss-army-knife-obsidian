@@ -7,4 +7,5 @@ Currently handled commands:
 - remove empty lines
 - create expandable/collapsable section
 - download plugin (tag) version
+- scroll page down/up command
 

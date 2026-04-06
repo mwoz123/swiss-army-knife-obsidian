@@ -6,6 +6,6 @@ Currently handled commands:
 - remove duplicated empty lines (replace with single)
 - remove empty lines
 - create expandable/collapsable section
-- download plugin (tag) version
-- scroll page down/up command
+- download plugin (tag) version 
+- scroll page down/up command (UC: phone has addional keys)
 

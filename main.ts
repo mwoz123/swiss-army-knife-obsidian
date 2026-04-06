@@ -29,17 +29,13 @@ export default class SwissArmyKnifePlugin extends Plugin {
 		this.addCommand({
 			id: 'page-down-with-cursor',
 			name: 'Page Down',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.moveCursorByPage(editor, view, 'down');
-			}
+			callback: () => this.scroll('down')
 		});
 
 		this.addCommand({
 			id: 'page-up-with-cursor',
 			name: 'Page Up',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				this.moveCursorByPage(editor, view, 'up');
-			}
+			callback: () => this.scroll('up')
 		});
 
 	}
@@ -55,31 +51,43 @@ export default class SwissArmyKnifePlugin extends Plugin {
 	}
 
 
-	private moveCursorByPage(editor: Editor, view: MarkdownView, direction: 'up' | 'down') {
-		const LINE_HEIGHT = 28;
+	private scroll(dir: 'up' | 'down') {
+		const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!view) return;
 
-		const viewHeight = view.contentEl.clientHeight;
+		const vHeight = window.visualViewport?.height || window.innerHeight;
 
-		const linesToJump = Math.floor(viewHeight / LINE_HEIGHT) - 2;
+		if (view.getMode() === 'preview') {
+			const scrollEl = view.contentEl.querySelector('.markdown-preview-view') as HTMLElement;
+			if (scrollEl) {
+				const jump = vHeight * 0.9;
+				scrollEl.scrollTop += dir === 'down' ? jump : -jump;
+			}
+		} else {
+			const editor = view.editor;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const codeMirrorBackend = (editor as any).cm;
+			const rect = view.contentEl.getBoundingClientRect();
 
-		const currentCursor = editor.getCursor();
+			const top = Math.max(rect.top, 0) + 10;
+			const bot = Math.min(rect.bottom, vHeight) - 10;
 
-		let targetLine = direction === 'down'
-			? currentCursor.line + linesToJump -1
-			: currentCursor.line - linesToJump +1;
+			const topOffset = codeMirrorBackend?.posAtCoords?.({ x: rect.left + 30, y: top });
+			const bottomOffset = codeMirrorBackend?.posAtCoords?.({ x: rect.left + 30, y: bot });
 
-		const maxLine = editor.lineCount() - 1;
-		if (targetLine < 0) {
-			targetLine = 0;
-		} else if (targetLine > maxLine) {
-			targetLine = maxLine;
+			let jumpLinesFallbackVal = 15;
+			if (topOffset != null && bottomOffset != null) {
+				const startLine = editor.offsetToPos(topOffset).line;
+				const endLine = editor.offsetToPos(bottomOffset).line;
+				jumpLinesFallbackVal = Math.max(1, Math.abs(endLine - startLine) - 1);
+			}
+
+			const cursor = editor.getCursor();
+			const targetLine = Math.max(0, Math.min(editor.lineCount() - 1, cursor.line + (dir === 'down' ? jumpLinesFallbackVal : -jumpLinesFallbackVal)));
+
+			editor.setCursor({ line: targetLine, ch: cursor.ch });
+			editor.scrollIntoView({ from: { line: targetLine, ch: cursor.ch }, to: { line: targetLine, ch: cursor.ch } });
 		}
-
-		const newPos = { line: targetLine, ch: currentCursor.ch };
-
-		editor.setCursor(newPos);
-
-		editor.scrollIntoView({ from: newPos, to: newPos });
 	}
 
 }
